@@ -1,6 +1,4 @@
 from decouple import config
-from langchain_openai import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 from langserve import add_routes
@@ -13,7 +11,6 @@ from langchain_community.tools.sql_database.tool import QuerySQLDatabaseTool
 from langchain_community.agent_toolkits import SQLDatabaseToolkit
 from langgraph.graph import START, StateGraph
 from langgraph.prebuilt import create_react_agent
-
 
 app = FastAPI()
 
@@ -73,7 +70,7 @@ graph_builder = StateGraph(State).add_sequence(
     [write_query, execute_query, generate_answer]
 )
 graph_builder.add_edge(START, "write_query")
-graph = graph_builder.compile()
+pipeline = graph_builder.compile()
 
 toolkit = SQLDatabaseToolkit(db=db, llm=llm)
 tools = toolkit.get_tools()
@@ -81,15 +78,8 @@ tools = toolkit.get_tools()
 prompt_template = hub.pull("langchain-ai/sql-agent-system-prompt")
 system_message = prompt_template.format(dialect=db.dialect, top_k=10)
 
-
-# TODO: Need to use following sql agent
+# TODO: Need to use following sql agent which has access to tools and is more reliable
 sql_agent = create_react_agent(llm, tools, prompt=system_message, name="SQL Agent")
-
-# Old code start
-model = ChatOpenAI(openai_api_key=config("OPEN_API_KEY"))
-prompt = ChatPromptTemplate.from_template("Give me a summary about {topic} in a paragraph or less.")
-chain = prompt | model
-# Old code end
 
 
 @app.get("/")
@@ -98,7 +88,7 @@ async def redirect_root_to_docs():
 
 
 # Edit this to add the chain you want to add
-add_routes(app, graph, path="/agent")
+add_routes(app, pipeline, path="/agent")
 
 if __name__ == "__main__":
     import uvicorn
