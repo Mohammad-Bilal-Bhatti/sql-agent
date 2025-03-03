@@ -37,7 +37,10 @@ python -m venv venv
 venv/Scripts/activate
 
 # Active virtual env unix
-source /venv/scripts/activate
+source venv/bin/activate
+
+# For Unix users please ensure you have mysql-client and pkg-config installed already 
+# If not follow the steps mentioned here https://github.com/PyMySQL/mysqlclient
 
 # Install dependencies
 pip install -r requirements.txt
